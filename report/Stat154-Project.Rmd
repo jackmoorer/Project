@@ -1,0 +1,331 @@
+---
+title: "Stat154_Project"
+author: "JackMoorer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/adult.csv", header = FALSE, sep = ",", strip.white=TRUE, stringsAsFactors = FALSE)
+```
+
+```{r}
+nrow(train)
+```
+```{r}
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/test.csv", header = FALSE, sep = ",", strip.white=TRUE, stringsAsFactors = FALSE)
+```
+
+```{r}
+names <- c("age", "workclass", "fnlwgt", "education", "education_num",
+           "marital_status", "occupation", "relationship", "race", "sex",
+           "capital_gain", "capital_loss", "hours_per_week", "native_country",
+           "Over50k")
+names(train) <- names
+names(test) <- names
+```
+
+```{r}
+train$age <- as.numeric(train$age)
+test$age <- as.numeric(test$age)
+```
+
+```{r}
+train[train == "?"] <- NA
+test[test == "?"] <- NA
+```
+
+```{r}
+over50k_numeric_train <- rep(0, nrow(train))
+over50k_numeric_train[train$Over50k == ">50K"] <- 1
+train$over50k_numeric <- over50k_numeric_train
+
+over50k_numeric_test <- rep(0, nrow(test))
+over50k_numeric_test[test$Over50k == ">50K."] <- 1
+test$over50k_numeric <- over50k_numeric_test
+test
+```
+```{r}
+train_response <- train$over50k_numeric
+train_response[train$over50k_numeric == 1] <- "Yes"
+train_response[train$over50k_numeric == 0] <- "No"
+train$Over50k <- as.factor(train_response)
+train
+```
+```{r}
+test_response <- test$over50k_numeric
+test_response[test$over50k_numeric == 1] <- "Yes"
+test_response[test$over50k_numeric == 0] <- "No"
+test$Over50k <- as.factor(test_response)
+test
+```
+```{r}
+train$workclass <- as.factor(train$workclass)
+train$education <- as.factor(train$education)
+train$marital_status <- as.factor(train$marital_status)
+train$occupation <- as.factor(train$occupation)
+train$relationship <- as.factor(train$relationship)
+train$race <- as.factor(train$race)
+train$sex <- as.factor(train$sex)
+#train$native_country <- as.factor(train$native_country)
+train
+```
+
+```{r}
+test$workclass <- as.factor(test$workclass)
+test$education <- as.factor(test$education)
+test$marital_status <- as.factor(test$marital_status)
+test$occupation <- as.factor(test$occupation)
+test$relationship <- as.factor(test$relationship)
+test$race <- as.factor(test$race)
+test$sex <- as.factor(test$sex)
+#test$native_country <- as.factor(test$native_country)
+test
+```
+
+```{r}
+test_clean <- na.omit(test)
+test_clean
+```
+
+```{r}
+train_clean <- na.omit(train)
+train_clean
+```
+```{r}
+library(ISLR)
+library(tree)
+library(rpart)
+```
+
+```{r}
+train_tree <- train_clean[,-ncol(train_clean)]
+train_tree
+```
+
+```{r}
+classification_tree <- tree(Over50k ~., data = train_tree)
+summary(classification_tree)
+```
+
+```{r}
+class_tree <- rpart(Over50k ~., data = train_tree)
+summary(class_tree)
+```
+
+```{r}
+plot(classification_tree)
+text(classification_tree, pretty = 0)
+```
+
+```{r}
+plot(class_tree)
+text(class_tree, pretty = 0)
+```
+```{r}
+set.seed(100)
+classification_tree_cv_misclass <- cv.tree(classification_tree, FUN = prune.misclass)
+```
+
+```{r}
+classification_tree_cv_misclass
+```
+```{r}
+library(ggplot2)
+Size <- classification_tree_cv_misclass$size
+K <- classification_tree_cv_misclass$k
+Dev <- classification_tree_cv_misclass$dev
+Misclass <- data.frame(Size, K, Dev)
+```
+
+```{r}
+ggplot(data = Misclass, aes(x = Size, y = Dev)) + geom_point() + geom_line() + ggtitle("Size of Tree vs Error for Misclass Method")
+```
+
+```{r}
+ggplot(data = Misclass, aes(x = K, y = Dev)) + geom_point() + geom_line() + ggtitle("Cost-Complexity vs Error for Misclass Method")
+```
+
+```{r}
+set.seed(200)
+classification_tree_cv_tree <- cv.tree(classification_tree, FUN = prune.tree)
+```
+
+```{r}
+classification_tree_cv_tree
+```
+
+```{r}
+Size <- classification_tree_cv_tree$size
+K <- classification_tree_cv_tree$k
+Dev <- classification_tree_cv_tree$dev
+default <- data.frame(Size, K, Dev)
+```
+
+```{r}
+ggplot(data = default, aes(x = Size, y = Dev)) + geom_point() + geom_line() + ggtitle("Size of Tree vs Error for Default Method")
+```
+```{r}
+ggplot(data = Misclass, aes(x = K, y = Dev)) + geom_point() + geom_line() + ggtitle("Cost-Complexity vs Error for Default Method")
+```
+```{r}
+alpha <- 0
+size <- 8
+```
+
+```{r}
+prune_classification_tree <- prune.misclass(classification_tree, best = size)
+#prune_classification_tree <- prune.misclass(classification_tree, k = alpha)
+```
+
+```{r}
+prune_classification_tree
+```
+
+```{r}
+summary(prune_classification_tree)
+```
+
+```{r}
+plot(prune_classification_tree)
+text(prune_classification_tree, pretty = 0)
+```
+
+```{r}
+prune_classification_tree_default <- prune.tree(classification_tree, best = size)
+#prune_classification_tree_default <- prune.tree(classification_tree, k = alpha
+plot(prune_classification_tree_default)
+text(prune_classification_tree_default, pretty = 0)
+```
+
+```{r}
+prune_classification_tree_default
+```
+
+```{r}
+library(caret)
+library(randomForest)
+varImp(prune_classification_tree)
+```
+
+```{r}
+tree_test <- test_clean[,-c(15, 16)]
+tree_test
+```
+
+```{r}
+real <- test_clean$Over50k
+preds_classification_tree <- predict(prune_classification_tree, tree_test, type = "class")
+table(preds_classification_tree, real)
+sum(diag(table(preds_classification_tree, real)))/sum(table(preds_classification_tree, real))
+```
+```{r}
+preds_classification_tree_default <- predict(prune_classification_tree_default, tree_test, type = "class")
+table(preds_classification_tree_default, real)
+sum(diag(table(preds_classification_tree_default, real)))/sum(table(preds_classification_tree_default, real))
+```
+
+```{r}
+preds <- predict(classification_tree, tree_test, type = "class")
+table(preds, real)
+sum(diag(table(preds, real)))/sum(table(preds, real))
+```
+
+```{r}
+predictions <- predict(class_tree, tree_test, type = "class")
+table(predictions, real)
+sum(diag(table(predictions, real)))/sum(table(predictions, real))
+```
+
+```{r}
+real_train <- train_tree$Over50k
+training_preds <- predict(prune_classification_tree, train_tree, type = "class")
+table(training_preds, real_train)
+sum(diag(table(training_preds, real_train)))/sum(table(training_preds, real_train))
+```
+
+
+```{r}
+training_preds_def <- predict(prune_classification_tree_default, train_tree, type = "class")
+table(training_preds_def, real_train)
+sum(diag(table(training_preds_def, real_train)))/sum(table(training_preds_def, real_train))
+```
+```{r}
+pr_tr <- predict(classification_tree, train_tree, type = "class")
+table(pr_tr, real_train)
+sum(diag(table(pr_tr, real_train)))/sum(table(pr_tr, real_train))
+```
+```{r}
+pr <- predict(class_tree, train_tree, type = "class")
+table(pr, real_train)
+sum(diag(table(pr, real_train)))/sum(table(pr, real_train))
+```
+```{r}
+library(ROCR)
+```
+```{r}
+probs <- predict(prune_classification_tree, train_tree)
+prediction <- prediction(probs[,2], real_train)
+performance <- performance(prediction, measure = "tpr", x.measure = "fpr")
+```
+
+```{r}
+plot(performance, main = "ROC Curve")
+abline(a=0, b=1, lty=2)
+```
+
+```{r}
+performance(prediction, measure="auc")@y.values[[1]]
+```
+
+```{r}
+probs <- predict(prune_classification_tree_default, train_tree)
+prediction <- prediction(probs[,2], real_train)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+
+```{r}
+probs <- predict(classification_tree, train_tree)
+prediction <- prediction(probs[,2], real_train)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+```{r}
+probs <- predict(class_tree, train_tree)
+prediction <- prediction(probs[,2], real_train)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+```{r}
+probs <- predict(prune_classification_tree, tree_test)
+prediction <- prediction(probs[,2], real)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+```{r}
+probs <- predict(prune_classification_tree_default, tree_test)
+prediction <- prediction(probs[,2], real)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+
+```{r}
+probs <- predict(classification_tree, tree_test)
+prediction <- prediction(probs[,2], real)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+
+```{r}
+probs <- predict(class_tree, tree_test)
+prediction <- prediction(probs[,2], real)
+performance(prediction, measure="auc")@y.values[[1]]
+```
+
+```{r}
+library(randomForest)
+```
+
+```{r}
+
+```
+
+
