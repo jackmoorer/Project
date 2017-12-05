@@ -208,7 +208,7 @@ prune_classification_tree_default
 ```{r}
 library(caret)
 library(randomForest)
-varImp(prune_classification_tree)
+#varImp(prune_classification_tree)
 ```
 
 ```{r}
@@ -325,7 +325,43 @@ library(randomForest)
 ```
 
 ```{r}
-
+set.seed(1)
+train_tree$native_country <- as.factor(train_tree$native_country)
+#bag <- randomForest(Over50k ~ ., data = train_tree, mtry = 13, importance = TRUE)
+#bag
 ```
+
+```{r}
+tt <- train_tree[, -14]
+random_forest <- randomForest(Over50k ~., data = tt, importance = TRUE)
+```
+
+```{r}
+rf_pred <- predict(random_forest, tt)
+mean(rf_pred != real_train)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
