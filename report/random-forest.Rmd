@@ -1,0 +1,51 @@
+---
+title: "random-forest"
+author: "JackMoorer"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_train.csv", header = TRUE)
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_test.csv", header = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(randomForest)
+```
+
+```{r}
+train
+```
+
+```{r}
+train_forest <- train[, -c(4, ncol(train))]
+```
+
+```{r}
+train_forest
+```
+
+```{r}
+rf <- randomForest(Over50k ~., data = train_forest, imporatance = TRUE)
+```
+
+```{r}
+rf$confusion
+```
+
+```{r}
+importance(rf)
+```
+```{r}
+varImpPlot(rf)
+```
+
+
+
+
+

@@ -78,10 +78,10 @@ train_clean <- na.omit(train)
 test_clean <- na.omit(test)
 
 #write clean train csv file
-write.csv(train_clean, file = "../data/clean_test.csv")
+write.csv(train_clean, file = "../data/clean_test.csv", row.names = FALSE)
 
 #write clean train csv file
-write.csv(test_clean, file = "../data/clean_train.csv")
+write.csv(test_clean, file = "../data/clean_train.csv", row.names = FALSE)
 
 
 
