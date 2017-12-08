@@ -1,0 +1,14 @@
+$size
+[1] 8 5 4 3 1
+
+$dev
+[1] 2415 2415 2557 2705 3700
+
+$k
+[1]  -Inf   0.0 142.0 202.0 470.5
+
+$method
+[1] "misclass"
+
+attr(,"class")
+[1] "prune"         "tree.sequence"

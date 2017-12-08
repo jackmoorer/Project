@@ -1,0 +1,112 @@
+
+Two-Step Estimates
+
+Correlations/Type of Correlation:
+                     age  workclass     fnlwgt  education education_num marital_status occupation relationship       race
+age                    1 Polyserial    Pearson Polyserial       Pearson     Polyserial Polyserial   Polyserial Polyserial
+workclass           <NA>          1 Polyserial Polychoric    Polyserial     Polychoric Polychoric   Polychoric Polychoric
+fnlwgt          -0.07651       <NA>          1 Polyserial       Pearson     Polyserial Polyserial   Polyserial Polyserial
+education       -0.02067   0.006038    -0.0233          1    Polyserial     Polychoric Polychoric   Polychoric Polychoric
+education_num    0.04353       <NA>   -0.04499     0.2333             1     Polyserial Polyserial   Polyserial Polyserial
+marital_status   -0.2649   -0.02928    0.03345   -0.02885      -0.07094              1 Polychoric   Polychoric Polychoric
+occupation       0.00798    0.03375    -0.0023   -0.05711       0.06075       0.009161          1   Polychoric Polychoric
+relationship      -0.268   -0.09282    0.01311   0.009011      -0.08893         0.2139   -0.09738            1 Polychoric
+race             0.04008    0.09733   -0.04444    0.01368        0.0598        -0.1141    0.01211      -0.1952          1
+sex               0.1064     0.1235    0.03334   -0.04688       0.00815        -0.1584     0.1465       -0.793     0.1756
+capital_gain     0.08015       <NA>  0.0004216    0.01805        0.1244       -0.04419    0.02122     -0.08856     0.0268
+capital_loss     0.06017       <NA>   -0.00975   0.007912       0.07965       -0.03607    0.01717     -0.07886    0.04233
+hours_per_week    0.1016       <NA>   -0.02289    0.02706        0.1525         -0.198     0.0467      -0.2805    0.08037
+Over50k           0.3277    0.02045   -0.01235    0.06269        0.4682         -0.296    0.08504      -0.4087      0.169
+US_Citizen       0.02938  0.0009769    -0.1348     0.1622        0.1885       -0.07317     0.0196     -0.03968     0.4285
+over50k_numeric    0.242       <NA>  -0.008957    0.04418        0.3353        -0.2025    0.06111      -0.3403      0.128
+                       sex capital_gain capital_loss hours_per_week    Over50k US_Citizen over50k_numeric
+age             Polyserial      Pearson      Pearson        Pearson Polyserial Polyserial         Pearson
+workclass       Polychoric   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+fnlwgt          Polyserial      Pearson      Pearson        Pearson Polyserial Polyserial         Pearson
+education       Polychoric   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+education_num   Polyserial      Pearson      Pearson        Pearson Polyserial Polyserial         Pearson
+marital_status  Polychoric   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+occupation      Polychoric   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+relationship    Polychoric   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+race            Polychoric   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+sex                      1   Polyserial   Polyserial     Polyserial Polychoric Polychoric      Polyserial
+capital_gain       0.08539            1      Pearson        Pearson Polyserial Polyserial         Pearson
+capital_loss       0.06618     -0.03223            1        Pearson Polyserial Polyserial         Pearson
+hours_per_week      0.3112      0.08043      0.05242              1 Polyserial Polyserial         Pearson
+Over50k             0.4084       0.5366       0.1721         0.3171          1 Polychoric      Polyserial
+US_Citizen       -0.006953      0.02637      0.02936        0.01915     0.1021          1      Polyserial
+over50k_numeric      0.307       0.2212       0.1501         0.2295     0.9999    0.07585               1
+
+Standard Errors:
+                     age workclass   fnlwgt education education_num marital_status occupation relationship     race
+age                                                                                                                
+workclass              0                                                                                           
+fnlwgt          0.005724         0                                                                                 
+education       0.005992  0.007095 0.005992                                                                        
+education_num   0.005747         0 0.005746   0.00547                                                              
+marital_status  0.005596  0.007316  0.00617  0.006445      0.006145                                                
+occupation      0.005875  0.006958 0.005874  0.006121      0.005818       0.006339                                 
+relationship    0.005647   0.00732 0.006232  0.006451      0.006244       0.006048    0.00628                      
+race            0.008886   0.01006 0.008372  0.009032      0.008656       0.009123   0.008909     0.009131         
+sex             0.007419   0.00876 0.007544  0.007768       0.00755       0.007588   0.007484     0.003555  0.01089
+capital_gain    0.005721         0 0.005758  0.005868      0.005669       0.006215   0.005819     0.007636  0.01004
+capital_loss    0.005737         0 0.005758  0.005952      0.005722       0.006197   0.005853     0.006563 0.009614
+hours_per_week  0.005699         0 0.005755  0.006005      0.005624       0.005887   0.005835     0.005689 0.008922
+Over50k         0.006905  0.008977 0.007906  0.008279      0.006424       0.008199   0.008015     0.006956  0.01203
+US_Citizen       0.01033   0.01246 0.009294    0.0103      0.009041        0.01102    0.01057      0.01103  0.01183
+over50k_numeric 0.005421         0 0.005758  0.005956      0.005111       0.005935    0.00582     0.005566 0.009268
+                     sex capital_gain capital_loss hours_per_week Over50k US_Citizen
+age                                                                                 
+workclass                                                                           
+fnlwgt                                                                              
+education                                                                           
+education_num                                                                       
+marital_status                                                                      
+occupation                                                                          
+relationship                                                                        
+race                                                                                
+sex                                                                                 
+capital_gain     0.01007                                                            
+capital_loss    0.007959     0.005752                                               
+hours_per_week  0.007059     0.005721     0.005742                                  
+Over50k         0.009366     0.008205     0.006965       0.007204                   
+US_Citizen        0.0133      0.01205      0.01099        0.01032 0.01418           
+over50k_numeric 0.007323     0.005476     0.005628       0.005455     Inf    0.01068
+
+n = 30162 
+
+P-values for Tests of Bivariate Normality:
+                       age             workclass     fnlwgt  education education_num marital_status occupation
+age                                                                                                           
+workclass                0                                                                                    
+fnlwgt          3.664e-237                     0                                                              
+education                0 7.13100015644869e-317          0                                                   
+education_num            0                     0          0          0                                        
+marital_status           0            1.008e-210 8.479e-169 1.868e-207             0                          
+occupation               0                     0          0          0             0              0           
+relationship             0            4.324e-208          0          0             0              0          0
+race                     0             4.934e-59          0  2.654e-94             0     5.717e-113 1.581e-136
+sex              2.076e-90            1.655e-110 3.965e-158  7.755e-40             0              0          0
+capital_gain             0                     0          0          0             0              0          0
+capital_loss             0                     0          0          0             0              0          0
+hours_per_week           0                     0          0          0             0              0          0
+Over50k         1.185e-281            3.366e-151 1.031e-161          0             0              0          0
+US_Citizen       7.625e-68             1.471e-18 1.688e-158 2.878e-265             0      2.023e-56  1.486e-70
+over50k_numeric          0                     0          0          0             0              0          0
+                relationship                  race  sex capital_gain capital_loss hours_per_week Over50k US_Citizen
+age                                                                                                                
+workclass                                                                                                          
+fnlwgt                                                                                                             
+education                                                                                                          
+education_num                                                                                                      
+marital_status                                                                                                     
+occupation                                                                                                         
+relationship                                                                                                       
+race              1.722e-106                                                                                       
+sex                        0             2.268e-34                                                                 
+capital_gain               0                     0    0                                                            
+capital_loss               0                     0    0            0                                               
+hours_per_week             0                     0    0            0            0                                  
+Over50k                    0             7.016e-34 <NA>            0            0              0                   
+US_Citizen          3.05e-68 8.12099999999999e-297 <NA>            0            0              0    <NA>           
+over50k_numeric            0                     0    0            0            0              0     NaN          0

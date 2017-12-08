@@ -1,0 +1,264 @@
+---
+title: "random-forest"
+author: "JackMoorer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_train.csv", header = TRUE)
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_test.csv", header = TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+library(randomForest)
+library(caret)
+```
+
+##Train Set
+```{r}
+train_forest <- train[, -ncol(train)]
+```
+
+First I tried just the basic random forest to see the results
+```{r}
+set.seed(200)
+rf <- randomForest(Over50k ~., data = train_forest, imporatance = TRUE)
+```
+
+```{r}
+rf$confusion
+```
+
+```{r}
+importance(rf)
+```
+```{r}
+varImpPlot(rf)
+```
+
+```{r}
+train_predictors <- train_forest[, -ncol(train_forest)]
+```
+
+```{r}
+train_response <- train_forest$Over50k
+```
+
+Next I did cross validation to tune the number of predictors used while building a tree
+```{r}
+set.seed(200)
+rf_cv <- rfcv(train_predictors, train_response, cv.fold = 5)
+```
+
+The plot below shows the best number of predictors to use is all 13.
+```{r}
+with(rf_cv, plot(n.var, error.cv, log="x", type="o", lwd=1, main = "CV Variables vs Error Rate", xlab = "Variables Used", ylab = "CV Error Rate"))
+```
+```{r}
+rf_cv$error.cv[[1]]
+```
+
+```{r}
+num_var <- as.numeric(names(which.min(rf_cv$error.cv)))
+print(num_var)
+```
+
+
+```{r, eval = FALSE}
+#this takes too long
+set.seed(200)
+ntree <- c(50, 100, 500, 1000, 1500)
+matrix <- matrix(rep(0, 4*5*3), ncol = 3, nrow = 20)
+i <- 0
+for (tree in ntree) {
+  rf_cv <- rfcv(train_predictors, train_response, cv.fold = 3, ntree  = tree)
+  for (j in 1:length(rf_cv$n.var)) {
+    matrix[i + j, ] <- c(tree, rf_cv$n.var[j], rf_cv$error.cv[[j]])
+  }
+  i <- i + j
+}
+```
+
+```{r, eval = FALSE}
+cv_df <- data.frame(matrix)
+names(cv_df) <- c("ntree", "num_var", "error_rate")
+err_rate <- cv_df$error_rate
+row_num <- as.numeric(which.min(err_rate))
+best_ntree <- cv_df$ntree[row_num]
+best_num_var <- cv_df$num_var[row_num]
+```
+
+```{r}
+set.seed(200)
+ntree <- c(50, 100, 500, 1000, 1500)
+cv_list <- as.list(rep(0, 5))
+names(cv_list) <- ntree
+i <- 1
+for (tree in ntree) {
+  tune_param <- tuneRF(train_predictors, train_response, ntreeTry = tree, trace = FALSE, plot = FALSE)
+  cv_list[[i]] <- tune_param
+  i <- i + 1
+}
+cv_list
+```
+```{r}
+library(stringr)
+matrix <- matrix(rep(0, 3*5*3), nrow = 15, ncol = 3)
+index <- 0
+for (i in 1:5) {
+  cur_cv <- cv_list[i]
+  errs <- cv_list[[i]][,2]
+  for (j in 1:length(errs)){
+    cur_err <- cv_list[[i]][,2][[j]]
+    val <- str_sub(names(cv_list[[i]][,2][j]), 1, 1)
+    val <- as.numeric(val)
+    matrix[index + j, ] <- c(ntree[i], val, cur_err)
+  }
+  index <- index + j
+}
+cv_df <- data.frame(matrix)
+names(cv_df) <- c("ntree", "num_var", "OOB")
+cv_df
+```
+
+```{r}
+library(ggplot2)
+cv_df$number_of_trees <- factor(cv_df$ntree)
+```
+
+```{r}
+ggplot(data = cv_df, aes(x = num_var, y = OOB, color = number_of_trees)) + geom_line() + ggtitle("Random Forest Hyper Parameter Tuning")
+```
+
+```{r}
+oobs <- cv_df$OOB
+row_num <- as.numeric(which.min(oobs))
+num_tree <- cv_df[row_num, 1]
+num_var <- cv_df[row_num, 2]
+```
+
+I am going to run the random forest using this parameter:
+```{r}
+set.seed(100)
+random_forest <- randomForest(Over50k ~., data = train_forest, ntree = num_tree, mtry = num_var, importance = TRUE)
+```
+
+```{r}
+print(random_forest)
+```
+
+```{r}
+importance(random_forest)
+```
+```{r}
+varImpPlot(random_forest)
+```
+
+```{r}
+rf_pred <- predict(random_forest, train_forest[, -ncol(train_forest)])
+```
+
+
+```{r}
+real_train <- train_forest$Over50k
+err_rate <- mean(rf_pred != real_train)
+err_rate
+```
+
+```{r}
+library(ROCR)
+```
+
+```{r}
+probs <- as.vector(random_forest$votes[,2])
+```
+
+
+```{r}
+prediction <- prediction(probs, real_train)
+performance <- performance(prediction, measure = "tpr", x.measure = "fpr")
+```
+
+```{r}
+plot(performance, main="ROC Random Forest")
+abline(a=0, b=1, lty = 2)
+```
+
+```{r}
+auc <- performance(prediction, measure="auc")@y.values[[1]]
+auc
+```
+
+```{r}
+print(random_forest$confusion)
+```
+
+##Test Set
+```{r}
+test_forest <- test[, -ncol(test)]
+```
+
+```{r}
+test_forest_preds <- test_forest[, -ncol(test_forest)]
+real_test <- test_forest$Over50k
+```
+
+```{r}
+rf_test_preds <- predict(random_forest, test_forest_preds)
+err_rate <- mean(rf_test_preds != real_test)
+err_rate
+```
+
+```{r}
+confusionMatrix <- table(rf_test_preds, real_test)
+confusionMatrix 
+```
+```{r}
+sensitivity <- confusionMatrix[2, 2]/(confusionMatrix[2, 2] + confusionMatrix[1, 2])
+sensitivity
+```
+```{r}
+specificity <- confusionMatrix[1, 1]/(confusionMatrix[1, 1] + confusionMatrix[2, 1])
+specificity
+```
+
+
+```{r}
+test_probs <- predict(random_forest, test_forest_preds, type = "prob")
+```
+
+```{r}
+test_prediction <- prediction(test_probs[,2], real_test)
+test_performance <- performance(test_prediction,  measure = "tpr", x.measure = "fpr")
+```
+
+
+```{r}
+plot(test_performance, main="Test ROC Random Forest")
+abline(a=0, b=1, lty=2)
+```
+
+```{r}
+auc <- performance(test_prediction, measure="auc")@y.values[[1]]
+auc
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

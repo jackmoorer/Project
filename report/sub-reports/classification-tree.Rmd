@@ -1,0 +1,185 @@
+---
+title: "Classification Tree Rmd"
+author: "JackMoorer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_train.csv", header = TRUE)
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_test.csv", header = TRUE)
+```
+
+```{r}
+library(ISLR)
+library(tree)
+library(rpart)
+```
+
+
+```{r}
+train_tree <- train[,-ncol(train)]
+classification_tree <- tree(Over50k ~., data = train_tree)
+summary(classification_tree)
+```
+Now I will run cross validation on the tree using the function prune.misclass.
+```{r}
+set.seed(100)
+classification_tree_cv <- cv.tree(classification_tree, FUN = prune.misclass)
+```
+
+We can compare the size of the tree or the cost complexicity, k, of the tree with dev
+```{r}
+classification_tree_cv
+```
+We can plot this
+```{r}
+library(ggplot2)
+Size <- classification_tree_cv_misclass$size
+K <- classification_tree_cv_misclass$k
+Dev <- classification_tree_cv_misclass$dev
+Misclass <- data.frame(Size, K, Dev)
+Misclass
+```
+
+```{r}
+ggplot(data = Misclass, aes(x = Size, y = Dev)) + geom_point() + geom_line() + ggtitle("Size of Tree vs Error for Misclass Method")
+```
+
+```{r}
+ggplot(data = Misclass, aes(x = K, y = Dev)) + geom_point() + geom_line() + ggtitle("Cost-Complexity vs Error for Misclass Method")
+```
+We could use k = 0 as a cost complexicity hyper-parameter. However, if we look at number of trees using 5 or 8 both give us the same minimum. We can also look at a different type of cross validation approach using the default prune.tree function from cv.tree().
+
+```{r}
+set.seed(200)
+classification_tree_cv_default <- cv.tree(classification_tree, FUN = prune.tree)
+```
+
+
+```{r}
+classification_tree_cv_default
+```
+
+```{r}
+Size <- classification_tree_cv_default$size
+K <- classification_tree_cv_default$k
+Dev <- classification_tree_cv_default$dev
+default <- data.frame(Size, K, Dev)
+default
+```
+
+```{r}
+ggplot(data = default, aes(x = Size, y = Dev)) + geom_point() + geom_line() + ggtitle("Size of Tree vs Error for Default Method")
+```
+
+```{r}
+ggplot(data = default, aes(x = K, y = Dev)) + geom_point() + geom_line() + ggtitle("Cost-Complexity vs Error for Default Method")
+```
+
+From this cross validation we see similar results in the cost complexity, but it seems using a size of 8 is ideal.
+
+```{r}
+names <- classification_tree_cv_default$size
+values <- classification_tree_cv_default$dev
+names(values) <- names
+size <- as.numeric(names(which.min(values)))
+```
+
+```{r}
+set.seed(4)
+prune_classification_tree <- prune.misclass(classification_tree, best = size)
+```
+
+
+```{r}
+prune_classification_tree
+```
+
+```{r}
+summary(prune_classification_tree)
+```
+
+
+```{r}
+plot(prune_classification_tree)
+text(prune_classification_tree, pretty = 0)
+```
+
+```{r}
+real_train <- train_tree$Over50k
+train_preds <- predict(prune_classification_tree, train_tree, type = "class")
+table(train_preds, real_train)
+```
+
+```{r}
+err_rate <- mean(train_preds != real_train)
+err_rate
+```
+
+```{r}
+library(ROCR)
+```
+
+```{r}
+train_probs <- predict(prune_classification_tree, train_tree)
+train_prediction <- prediction(train_probs[,2], real_train)
+train_performance <- performance(train_prediction, measure = "tpr", x.measure = "fpr")
+```
+
+```{r}
+plot(train_performance, main = "Train ROC Curve for Classification Tree")
+abline(a=0, b=1, lty=2)
+```
+```{r}
+performance(train_prediction, measure="auc")@y.values[[1]]
+```
+
+```{r}
+test_tree <- test[, -ncol(test)]
+test_tree_preds <- test_tree[, -ncol(test_tree)]
+real_test <- test_tree$Over50k
+```
+
+```{r}
+ct_test_preds <- predict(prune_classification_tree, test_tree_preds, type = "class")
+test_err_rate <- mean(ct_test_preds != real_test)
+test_err_rate
+```
+
+```{r}
+confusionMatrix <- table(ct_test_preds, real_test)
+confusionMatrix 
+```
+
+```{r}
+sensitivity <- confusionMatrix[2, 2]/(confusionMatrix[2, 2] + confusionMatrix[1, 2])
+sensitivity
+```
+
+```{r}
+specificity <- confusionMatrix[1, 1]/(confusionMatrix[1, 1] + confusionMatrix[2, 1])
+specificity
+```
+
+
+```{r}
+ct_test_probs <- predict(prune_classification_tree, test_forest_preds)
+ct_test_prediction <- prediction(ct_test_probs[,2], real_test)
+ct_test_performance <- performance(ct_test_prediction,  measure = "tpr", x.measure = "fpr")
+```
+
+
+```{r}
+plot(ct_test_performance, main="Test ROC Classification Tree")
+abline(a=0, b=1, lty=2)
+```
+
+```{r}
+auc <- performance(ct_test_prediction, measure="auc")@y.values[[1]]
+auc
+```
+

@@ -1,0 +1,23 @@
+
+                  Cambodia                     Canada                      China                   Columbia 
+                        18                        107                         68                         56 
+                      Cuba         Dominican-Republic                    Ecuador                El-Salvador 
+                        92                         67                         27                        100 
+                   England                     France                    Germany                     Greece 
+                        86                         27                        128                         29 
+                 Guatemala                      Haiti         Holand-Netherlands                   Honduras 
+                        63                         42                          1                         12 
+                      Hong                    Hungary                      India                       Iran 
+                        19                         13                        100                         42 
+                   Ireland                      Italy                    Jamaica                      Japan 
+                        24                         68                         80                         59 
+                      Laos                     Mexico                  Nicaragua Outlying-US(Guam-USVI-etc) 
+                        17                        610                         33                         14 
+                      Peru                Philippines                     Poland                   Portugal 
+                        30                        188                         56                         34 
+               Puerto-Rico                   Scotland                      South                     Taiwan 
+                       109                         11                         71                         42 
+                  Thailand            Trinadad&Tobago              United-States                    Vietnam 
+                        17                         18                      27504                         64 
+                Yugoslavia 
+                        16 
