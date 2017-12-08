@@ -1,4 +1,0 @@
-           real_train
-train_preds    No   Yes
-        No  10842  1755
-        Yes   701  2017

@@ -1,2 +1,0 @@
-[1] "Train Error Rate for Classification Tree"
-[1] 0.1603657

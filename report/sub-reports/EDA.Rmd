@@ -1,0 +1,65 @@
+---
+title: "EDA"
+author: "JackMoorer"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_train.csv", header = TRUE)
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_test.csv", header = TRUE)
+```
+
+```{r}
+library(ggplot2)
+native_country <- data.frame(table(train$native_country))
+native_country
+```
+
+
+```{r}
+ggplot(data = native_country, aes(x = Var1, y = Freq)) + geom_bar(stat = "identity")
+```
+
+
+
+
+```{r}
+us_citizen <- rep(0, nrow(train))
+us_citizen[train$native_country == "United-States"] <- "Yes"
+us_citizen[train$native_country != "United-States"] <- "No"
+```
+
+
+```{r}
+train$US_Citizen <- us_citizen
+```
+
+```{r}
+us_citizen_test <- rep(0, nrow(test))
+us_citizen_test[test$native_country == "United-States"] <- "Yes"
+us_citizen_test[test$native_country != "United-States"] <- "No"
+```
+
+
+```{r}
+test$US_Citizen <- us_citizen_test
+```
+
+
+```{r}
+library(polycor)
+```
+
+```{r}
+hetcor(train)
+```
+
+
+
+
+
+

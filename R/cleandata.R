@@ -29,6 +29,71 @@ test$age <- as.numeric(test$age)
 train[train == "?"] <- NA
 test[test == "?"] <- NA
 
+#convert string columns to factor columns for train
+train$workclass <- as.factor(train$workclass)
+train$education <- as.factor(train$education)
+train$marital_status <- as.factor(train$marital_status)
+train$occupation <- as.factor(train$occupation)
+train$relationship <- as.factor(train$relationship)
+train$race <- as.factor(train$race)
+train$sex <- as.factor(train$sex)
+
+
+#convert string columns to factor columns for test
+test$workclass <- as.factor(test$workclass)
+test$education <- as.factor(test$education)
+test$marital_status <- as.factor(test$marital_status)
+test$occupation <- as.factor(test$occupation)
+test$relationship <- as.factor(test$relationship)
+test$race <- as.factor(test$race)
+test$sex <- as.factor(test$sex)
+
+
+#remove na values from train
+train <- na.omit(train)
+
+#remove na values from test
+test <- na.omit(test)
+
+#We decided to omit native country for several reasons. 
+#One is that in general, when we kept native country, it was one of the least important variables
+#The other is it was hard to deal with since tree could not accept a factor with more than 32 levels
+#Also the test set had one country not in the training set
+#Instead we are going to make a variable "US_Citizen" that indicates whether an individual is a US citizen or not
+#We did this because the vast majority of people are US Citizens
+library(ggplot2)
+native_country <- data.frame(table(train$native_country))
+
+#report results from the native country table
+sink("../output/EDA_results/freq-table-train-data.txt")
+table(train$native_country)
+sink()
+
+#report plot of frequencies showing how overwhelming US majority is
+pdf("../images/EDA_plots/tain-data-country-freq-plot.pdf")
+ggplot(data = native_country, aes(x = Var1, y = Freq)) + geom_bar(stat = "identity") + ggtitle("Frequency Plot of Native Countries for Training Data")
+dev.off()
+
+#create dumby variable for training data
+us_citizen <- rep(0, nrow(train))
+us_citizen[train$native_country == "United-States"] <- "Yes"
+us_citizen[train$native_country != "United-States"] <- "No"
+
+#add dumby variable
+train$US_Citizen <- as.factor(us_citizen)
+
+#create dumby varaible for test data
+us_citizen_test <- rep(0, nrow(test))
+us_citizen_test[test$native_country == "United-States"] <- "Yes"
+us_citizen_test[test$native_country != "United-States"] <- "No"
+
+#add dumby variable
+test$US_Citizen <- as.factor(us_citizen_test)
+
+#remove original native_countries
+train <- train[, -14]
+test <- test[, -14]
+
 #create numeric response variable for train
 over50k_numeric_train <- rep(0, nrow(train))
 over50k_numeric_train[train$Over50k == ">50K"] <- 1
@@ -51,69 +116,30 @@ test_response[test$over50k_numeric == 1] <- "Yes"
 test_response[test$over50k_numeric == 0] <- "No"
 test$Over50k <- as.factor(test_response)
 
-#convert string columns to factor columns for train
-train$workclass <- as.factor(train$workclass)
-train$education <- as.factor(train$education)
-train$marital_status <- as.factor(train$marital_status)
-train$occupation <- as.factor(train$occupation)
-train$relationship <- as.factor(train$relationship)
-train$race <- as.factor(train$race)
-train$sex <- as.factor(train$sex)
-#train$native_country <- as.factor(train$native_country)
-#levels(train$native_country) <- c("United-States", "Cambodia", "England",
-                                 #"Puerto-Rico", "Canada", "Germany", 
-                                 #"Outlying-US(Guam-USVI-etc)", "India", "Japan",
-                                 #"Greece", "South", "China", "Cuba", "Iran",
-                                 #"Honduras", "Philippines", "Italy", "Poland",
-                                 #"Jamaica", "Vietnam", "Mexico", "Portugal",
-                                 #"Ireland", "France", "Dominican-Republic",
-                                 #"Laos", "Ecuador", "Taiwan", "Haiti",
-                                 #"Columbia", "Hungary", "Guatemala",
-                                 #"Nicaragua", "Scotland", "Thailand",
-                                 #"Yugoslavia", "El-Salvador", "Trinadad&Tobago",
-                                 #"Peru", "Hong", "Holand-Netherlands")
+#lets look that the correlation of the varibles using hetcor() from the polycor package
+library(polycor)
 
+#report correlation
+sink("../output/EDA_results/training-correlation.txt")
+hetcor(train)
+sink()
 
-#convert string columns to factor columns for test
-test$workclass <- as.factor(test$workclass)
-test$education <- as.factor(test$education)
-test$marital_status <- as.factor(test$marital_status)
-test$occupation <- as.factor(test$occupation)
-test$relationship <- as.factor(test$relationship)
-test$race <- as.factor(test$race)
-test$sex <- as.factor(test$sex)
-#test$native_country <- as.factor(test$native_country)
-#levels(test$native_country) <- c("United-States", "Cambodia", "England",
-                                 #"Puerto-Rico", "Canada", "Germany", 
-                                 #"Outlying-US(Guam-USVI-etc)", "India", "Japan",
-                                 #"Greece", "South", "China", "Cuba", "Iran",
-                                 #"Honduras", "Philippines", "Italy", "Poland",
-                                 #"Jamaica", "Vietnam", "Mexico", "Portugal",
-                                 #"Ireland", "France", "Dominican-Republic",
-                                 #"Laos", "Ecuador", "Taiwan", "Haiti",
-                                 #"Columbia", "Hungary", "Guatemala",
-                                 #"Nicaragua", "Scotland", "Thailand",
-                                 #"Yugoslavia", "El-Salvador", "Trinadad&Tobago",
-                                 #"Peru", "Hong", "Holand-Netherlands")
+#reorder the data frames and remove education_num
+train <- train[c("age", "workclass", "fnlwgt", "education",
+           "marital_status", "occupation", "relationship", "race", "sex",
+           "capital_gain", "capital_loss", "hours_per_week", "US_Citizen",
+           "Over50k", "over50k_numeric")]
 
-#We decided to omit native country for several reasons. 
-#One is that in general, when we kept native country, it was one of the least important variables
-#The other is it was hard to deal with since tree could not accept a factor with more than 32 levels
-#Also the test set had one country not in the training set
-train <- train[, -14]
-test <- test[, -14]
-
-#remove na values from train
-train_clean <- na.omit(train)
-
-#remove na values from test
-test_clean <- na.omit(test)
+test <- test[c("age", "workclass", "fnlwgt", "education",
+                 "marital_status", "occupation", "relationship", "race", "sex",
+                 "capital_gain", "capital_loss", "hours_per_week", "US_Citizen",
+                 "Over50k", "over50k_numeric")]
 
 #write clean train csv file
-write.csv(train_clean, file = "../data/clean_test.csv", row.names = FALSE)
+write.csv(train, file = "../data/clean_test.csv", row.names = FALSE)
 
 #write clean train csv file
-write.csv(test_clean, file = "../data/clean_train.csv", row.names = FALSE)
+write.csv(test, file = "../data/clean_train.csv", row.names = FALSE)
 
 
 

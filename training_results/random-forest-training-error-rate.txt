@@ -1,2 +1,0 @@
-[1] "Training error rate for Random Forest"
-[1] 6.529546e-05

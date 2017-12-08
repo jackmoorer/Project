@@ -1,0 +1,27 @@
+node), split, n, deviance, yval, (yprob)
+      * denotes terminal node
+
+ 1) root 15060 16790.00 No ( 0.75432 0.24568 )  
+   2) relationship: Not-in-family,Other-relative,Own-child,Unmarried 8172  4031.00 No ( 0.93270 0.06730 )  
+     4) capital_gain < 7055.5 8020  3196.00 No ( 0.94975 0.05025 )  
+       8) education: 10th,11th,12th,1st-4th,5th-6th,7th-8th,9th,Assoc-acdm,Assoc-voc,HS-grad,Preschool,Some-college 6361  1465.00 No ( 0.97548 0.02452 ) *
+       9) education: Bachelors,Doctorate,Masters,Prof-school 1659  1396.00 No ( 0.85112 0.14888 ) *
+     5) capital_gain > 7055.5 152    43.98 Yes ( 0.03289 0.96711 ) *
+   3) relationship: Husband,Wife 6888  9499.00 No ( 0.54268 0.45732 )  
+     6) education: 10th,11th,12th,1st-4th,5th-6th,7th-8th,9th,Assoc-voc,HS-grad,Preschool,Some-college 4595  5851.00 No ( 0.66638 0.33362 )  
+      12) capital_gain < 5095.5 4385  5377.00 No ( 0.69738 0.30262 )  
+        24) education: 10th,11th,12th,1st-4th,5th-6th,7th-8th,9th,Preschool 779   553.60 No ( 0.88575 0.11425 ) *
+        25) education: Assoc-voc,HS-grad,Some-college 3606  4639.00 No ( 0.65668 0.34332 ) *
+      13) capital_gain > 5095.5 210    39.61 Yes ( 0.01905 0.98095 ) *
+     7) education: Assoc-acdm,Bachelors,Doctorate,Masters,Prof-school 2293  2781.00 Yes ( 0.29481 0.70519 )  
+      14) capital_gain < 5095.5 1965  2530.00 Yes ( 0.34402 0.65598 ) *
+      15) capital_gain > 5095.5 328     0.00 Yes ( 0.00000 1.00000 ) *
+[1] " "
+
+Classification tree:
+tree(formula = Over50k ~ ., data = train_tree)
+Variables actually used in tree construction:
+[1] "relationship" "capital_gain" "education"   
+Number of terminal nodes:  8 
+Residual mean deviance:  0.7087 = 10670 / 15050 
+Misclassification error rate: 0.1604 = 2415 / 15060 
