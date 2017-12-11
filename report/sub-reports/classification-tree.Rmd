@@ -38,9 +38,9 @@ classification_tree_cv
 We can plot this
 ```{r}
 library(ggplot2)
-Size <- classification_tree_cv_misclass$size
-K <- classification_tree_cv_misclass$k
-Dev <- classification_tree_cv_misclass$dev
+Size <- classification_tree_cv$size
+K <- classification_tree_cv$k
+Dev <- classification_tree_cv$dev
 Misclass <- data.frame(Size, K, Dev)
 Misclass
 ```
@@ -96,7 +96,8 @@ prune_classification_tree <- prune.misclass(classification_tree, best = size)
 
 
 ```{r}
-prune_classification_tree
+plot(prune_classification_tree)
+text(prune_classification_tree, pretty = 0)
 ```
 
 ```{r}

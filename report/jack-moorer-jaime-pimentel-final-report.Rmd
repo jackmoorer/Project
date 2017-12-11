@@ -1,0 +1,235 @@
+---
+title: "Stat 154 Final Project Report"
+author: "Jack Moorer and Jaime Pimentel"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#read in the clean data
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_train.csv", header = TRUE)
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_test.csv", header = TRUE)
+```
+
+
+#Building Models
+
+##Clasification Tree
+
+###Build the Tree
+
+There seems to be two main ways to build a classification tree in r. The first is to use the package rpart, which was used in the examples in APM. The second way, which is the method they used in ISL and we used in lab, was using the tree package. After looking at booth methods, we decided to build our classification tree using the method form the tree package.
+
+```{r}
+#load packages
+library(ISLR)
+library(tree)
+library(rpart)
+```
+
+The tree method allows for categorical response variables and categorical predictor variables, so we don’t we use the numeric over 50k indicator variable or transform our predictors into dumby variables.
+
+```{r}
+#remove numeric reponse column
+train_tree <- train[,-ncol(train)]
+```
+
+I am going to start out by building a classification tree using the default tree function, just to get an idea of what is happening.
+
+```{r}
+#default classification tree
+classification_tree <- tree(Over50k ~., data = train_tree)
+summary(classification_tree)
+```
+
+I can now move on to tuning optimal parameters. From what I can see there are to main ways to tune hyperparameters using the tree package. . Both ways use cv.tree from the tree package, with the only difference being the prune function to perform cross validation. I am going to start by using prune.misclass, which looks at the parameters by looking at the misclassification rate of the tree with those parameters. The parameter we can tune is one of the cost-complexity parameter, k, or the number of terminal nodes in the tree, size. I am going to focus on the number of terminal nodes, size, as the parameter to tune, but I will still show the results of the cost-complexity parameter as well.
+
+```{r}
+#tune parameters
+set.seed(100)
+classification_tree_cv <- cv.tree(classification_tree, FUN = prune.misclass)
+```
+
+In cv.tree, the performance of the parameter is represented with dev, which looks at the misclassification rate of the tree with the given parameters. We can plot the results of the different terminal node sizes or cost-complexity parameters with dev.
+
+```{r}
+#look at data frame of cv results
+library(ggplot2)
+Size <- classification_tree_cv$size
+K <- classification_tree_cv$k
+Dev <- classification_tree_cv$dev
+Misclass <- data.frame(Size, K, Dev)
+Misclass
+```
+
+```{r}
+#plot cv results of number of terminal nodes
+ggplot(data = Misclass, aes(x = Size, y = Dev)) + geom_point() + geom_line() + ggtitle("Size of Tree vs Error for Misclass Method")
+```
+```{r}
+#plot cv results of number cost-complexity
+ggplot(data = Misclass, aes(x = K, y = Dev)) + geom_point() + geom_line() + ggtitle("Cost-Complexity vs Error for Misclass Method")
+```
+
+We could use k = 0 as a cost complexicity hyper-parameter. However, if we look at number of trees using 5 or 8 both give us the same minimum. We can also look at a different type of cross validation approach using the default prune.tree function from cv.tree(). In theory I could just pick the smaller value of 5, since an increased number of terminal nodes may overfit the data, however, I am going to compare the results of this tuning process to one using prune.tree has the function in cv.tree.
+
+```{r}
+#cv using prune.tree
+set.seed(200)
+classification_tree_cv_default <- cv.tree(classification_tree, FUN = prune.tree)
+```
+
+
+```{r}
+#creat data frame of results
+Size <- classification_tree_cv_default$size
+K <- classification_tree_cv_default$k
+Dev <- classification_tree_cv_default$dev
+default <- data.frame(Size, K, Dev)
+default
+```
+
+```{r}
+#plot cv results for size
+ggplot(data = default, aes(x = Size, y = Dev)) + geom_point() + geom_line() + ggtitle("Size of Tree vs Error for prune.tree Method")
+```
+
+```{r}
+#plot cv results for cross complexity
+ggplot(data = default, aes(x = K, y = Dev)) + geom_point() + geom_line() + ggtitle("Cost-Complexity vs Error for Default Method")
+```
+
+From both of these results it seems like minimum cost-complexity and maximum size is ideal for our tuned parameters. I am going to use size = 8 as the optical parameter.
+
+```{r}
+#get best size parameter from cross validation
+names <- classification_tree_cv_default$size
+values <- classification_tree_cv_default$dev
+names(values) <- names
+size <- as.numeric(names(which.min(values)))
+```
+
+I can now build an optimal classification tree using the best size parameter using prune.misclass.
+
+```{r}
+#build classification tree
+set.seed(4)
+prune_classification_tree <- prune.misclass(classification_tree, best = 8)
+```
+
+```{r}
+#let's look at the tree
+prune_classification_tree
+```
+
+```{r}
+#lets look at the structure of the tree
+plot(prune_classification_tree)
+text(prune_classification_tree, pretty = 0)
+```
+
+
+Based on the tree structure, the most important variable is relationship status, followed by capital gain, and then education. These are the only variables used to make the tree.  However, there are some further insights to be had. The most important categories that split the data in relationship are not-in-family, other-relative, own-child, and unmarried. Next is capital gain and education level, with a capital gain boundary of 7055.5 as the next best split of the data. The important features for education are the levels corresponding to non-college graduates. The tree is implying that the third most important feature for over 50k classification is whether of not you got at least a college degree, and the results imply if you did not get at least a college degree you will not make over 50k. Interestingly, if I compare my tree to one using size = 5, another good parameter based on our cross validation, I get a very similar tree, using the same 3 variables, that is just smaller, and the same thing happened when I set the cost-complexity parameter to 0.
+
+I could not find how to report importance statists of variables from classification trees using the tree library, only the rpart library.
+
+###Training Results
+
+Now I can look at the training accuracy rate. I also want to look at the training confusion matrix
+
+```{r}
+#get error rate of classification tree
+err_rate <- mean(train_preds != real_train)
+err_rate
+```
+
+```{r}
+#get accuracy
+training_accuracy_class_tree = 1 - err_rate
+```
+
+The training accuracy rate for the classification tree we built is 'r training_accuracy_class_tree'.
+
+```{r}
+#compute confusion matrix
+real_train <- train_tree$Over50k
+train_preds <- predict(prune_classification_tree, train_tree, type = "class")
+table(train_preds, real_train)
+```
+
+Now I can plot the ROC curve and find the AUC of the training data.
+
+```{r}
+#load package
+library(ROCR)
+```
+
+```{r}
+#prepare roc plot
+train_probs <- predict(prune_classification_tree, train_tree)
+train_prediction <- prediction(train_probs[,2], real_train)
+train_performance <- performance(train_prediction, measure = "tpr", x.measure = "fpr")
+```
+
+```{r}
+#plot roc
+plot(train_performance, main = "Train ROC Curve for Classification Tree")
+abline(a=0, b=1, lty=2)
+```
+
+```{r}
+#get train auc
+class_tree_train_auc <- performance(train_prediction, measure="auc")@y.values[[1]]
+class_tree_train_auc
+```
+
+The training auc for the classification tree is 'r class_tree_train_auc'.
+
+
+#Testing Models
+
+We are going to look at the performance of all of the methods, and then report the best at the end.
+
+##Classification Tree
+This section will be based around looking at the test performance of the classificaiton tree we build. 
+
+###Error Rate
+
+```{r}
+#prepare test data
+test_tree <- test[, -ncol(test)]
+test_tree_preds <- test_tree[, -ncol(test_tree)]
+real_test <- test_tree$Over50k
+```
+
+
+```{r}
+#get error rate
+ct_test_preds <- predict(prune_classification_tree, test_tree_preds, type = "class")
+ct_test_err_rate <- mean(ct_test_preds != real_test)
+ct_test_err_rate
+```
+
+```{r}
+#get test accuracy
+ct_test_acc <- 1 - ct_test_err_rate
+ct_test_acc
+```
+
+The test accuracy of our classification tree is 'r ct_test_acc'.
+
+
+###Confusion Matrix
+```{r}
+#get classification tree confusion matrix
+class_tree_confusionMatrix <- table(ct_test_preds, real_test)
+class_tree_confusionMatrix 
+```
+
+
+
+
