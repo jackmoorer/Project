@@ -1,5 +1,5 @@
 [1] "Random Forest Confusion Matrix"
              real_test
 rf_test_preds    No   Yes
-          No  21388  2934
-          Yes  1266  4574
+          No  10638  1378
+          Yes   722  2322

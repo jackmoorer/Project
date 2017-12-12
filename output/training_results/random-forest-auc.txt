@@ -1,2 +1,2 @@
 [1] "AUC of training set for Random Forest"
-[1] 0.900424
+[1] 0.9071512

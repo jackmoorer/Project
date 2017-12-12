@@ -1,5 +1,5 @@
 [1] "Classification Tree Confusion Matrix"
              real_test
 ct_test_preds    No   Yes
-          No  21315  3491
-          Yes  1339  4017
+          No  10772  1837
+          Yes   588  1863

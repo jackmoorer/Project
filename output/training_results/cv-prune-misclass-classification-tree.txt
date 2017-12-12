@@ -2,13 +2,31 @@ $size
 [1] 8 5 4 3 1
 
 $dev
-[1] 2415 2415 2557 2705 3700
-
-$k
-[1]  -Inf   0.0 142.0 202.0 470.5
-
-$method
-[1] "misclass"
-
-attr(,"class")
-[1] "prune"         "tree.sequence"
+null device 
+          1 
+null device 
+          1 
+null device 
+          1 
+null device 
+          1 
+null device 
+          1 
+null device 
+          1 
+null device 
+          1 
+null device 
+          1 
+0.003301108 0.05 
+-0.06366423 0.05 
+-0.011597 0.05 
+-0.05146171 0.05 
+-0.0004873294 0.05 
+-0.05165692 0.05 
+0.008464329 0.05 
+-0.04353083 0.05 
+0.002679006 0.05 
+-0.04627375 0.05 
+null device 
+          1 

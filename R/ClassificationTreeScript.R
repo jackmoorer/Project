@@ -3,7 +3,7 @@
 
 #load packages
 library(ggplot2)
-library(randomForest)
+library(tree)
 library(ROCR)
 
 #read in clean data
@@ -25,9 +25,9 @@ print(classification_tree_cv)
 sink()
 
 #prepare cv plots
-Size <- classification_tree_cv_misclass$size
-K <- classification_tree_cv_misclass$k
-Dev <- classification_tree_cv_misclass$dev
+Size <- classification_tree_cv$size
+K <- classification_tree_cv$k
+Dev <- classification_tree_cv$dev
 Misclass <- data.frame(Size, K, Dev)
 
 #report cv plot for size
