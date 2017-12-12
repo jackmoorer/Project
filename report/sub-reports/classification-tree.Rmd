@@ -168,7 +168,7 @@ specificity
 
 
 ```{r}
-ct_test_probs <- predict(prune_classification_tree, test_forest_preds)
+ct_test_probs <- predict(prune_classification_tree, test_tree_preds)
 ct_test_prediction <- prediction(ct_test_probs[,2], real_test)
 ct_test_performance <- performance(ct_test_prediction,  measure = "tpr", x.measure = "fpr")
 ```
