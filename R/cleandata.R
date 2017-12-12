@@ -135,11 +135,11 @@ test <- test[c("age", "workclass", "fnlwgt", "education",
                  "capital_gain", "capital_loss", "hours_per_week", "US_Citizen",
                  "Over50k", "over50k_numeric")]
 
-#write clean train csv file
-write.csv(train, file = "../data/clean_test.csv", row.names = FALSE)
+#write clean test csv file
+write.csv(test, file = "../data/clean_test.csv", row.names = FALSE)
 
 #write clean train csv file
-write.csv(test, file = "../data/clean_train.csv", row.names = FALSE)
+write.csv(train, file = "../data/clean_train.csv", row.names = FALSE)
 
 
 
