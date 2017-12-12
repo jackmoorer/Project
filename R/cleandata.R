@@ -74,6 +74,58 @@ pdf("../images/EDA_plots/tain-data-country-freq-plot.pdf")
 ggplot(data = native_country, aes(x = Var1, y = Freq)) + geom_bar(stat = "identity") + ggtitle("Frequency Plot of Native Countries for Training Data")
 dev.off()
 
+#plot freq of response variable
+resp = data.frame(table(train$Over50k))
+pdf("../images/EDA_plots/train-data-response-distrubtion.pdf")
+ggplot(data = resp, aes(x = Var1, y = Freq)) + geom_bar(stat = "identity")
+dev.off()
+
+#plot distribution of education
+pdf("../images/EDA_plots/train-data-education-distrubtion.pdf")
+ggplot(data = train, aes(x = education)) + geom_bar()
+dev.off()
+
+#plot distribution of relationship
+pdf("../images/EDA_plots/train-data-relationship-distrubtion.pdf")
+ggplot(data = train, aes(x = relationship)) + geom_bar()
+dev.off()
+
+#plot distribution of workclass
+pdf("../images/EDA_plots/train-data-workclass-distrubtion.pdf")
+ggplot(data = train, aes(x = workclass)) + geom_bar()
+dev.off()
+
+#plot distribution of race
+pdf("../images/EDA_plots/train-data-race-distrubtion.pdf")
+ggplot(data = train, aes(x = race)) + geom_bar()
+dev.off()
+
+#plot distribution of sex
+pdf("../images/EDA_plots/train-data-sex-distrubtion.pdf")
+ggplot(data = train, aes(x = sex)) + geom_bar()
+dev.off()
+
+
+#boxplot showing relationship of age and and response variable
+pdf("../images/EDA_plots/train-data-age-over50k-boxplot.pdf")
+ggplot(data = train, aes(x = Over50k, y = age, fill = 'type')) + geom_boxplot()
+dev.off()
+
+#boxplot showing relationship of hours per week and and response variable
+pdf("../images/EDA_plots/train-data-hours-over50k-boxplot.pdf")
+ggplot(data = train, aes(x = Over50k, y = hours_per_week, fill = 'type')) + geom_boxplot()
+dev.off()
+
+#boxplot showing relationship of capital gain and and response variable
+pdf("../images/EDA_plots/train-data-capital-gain-over50k-boxplot.pdf")
+ggplot(data = train, aes(x = Over50k, y = capital_gain, fill = 'type')) + geom_boxplot()
+dev.off()
+
+#boxplot showing relationship of capital loss and and response variable
+pdf("../images/EDA_plots/train-data-capital-loss-over50k-boxplot.pdf")
+ggplot(data = train, aes(x = Over50k, y = capital_loss, fill = 'type')) + geom_boxplot()
+dev.off()
+
 #create dumby variable for training data
 us_citizen <- rep(0, nrow(train))
 us_citizen[train$native_country == "United-States"] <- "Yes"

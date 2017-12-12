@@ -2,11 +2,11 @@
 Call:
  randomForest(formula = Over50k ~ ., data = train_forest, ntree = num_tree,      mtry = num_var, importance = TRUE) 
                Type of random forest: classification
-                     Number of trees: 1000
+                     Number of trees: 1500
 No. of variables tried at each split: 2
 
-        OOB estimate of  error rate: 14.1%
+        OOB estimate of  error rate: 13.63%
 Confusion matrix:
        No  Yes class.error
-No  10697  663  0.05836268
-Yes  1461 2239  0.39486486
+No  21308 1346  0.05941556
+Yes  2764 4744  0.36814065

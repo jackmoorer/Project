@@ -9,8 +9,55 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_train.csv", header = TRUE)
-test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/clean_test.csv", header = TRUE)
+train <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/adult.csv", header = FALSE, strip.white=TRUE,
+                  stringsAsFactors = FALSE)
+test <- read.csv("/Users/jackmoorer/Stat154/Projects/Project/data/test.csv", header = FALSE, strip.white=TRUE,
+                 stringsAsFactors = FALSE)
+
+names <- c("age", "workclass", "fnlwgt", "education", "education_num",
+           "marital_status", "occupation", "relationship", "race", "sex",
+           "capital_gain", "capital_loss", "hours_per_week", "native_country",
+           "Over50k")
+
+#add column names to train
+names(train) <- names
+
+#add column names to test
+names(test) <- names
+
+#convert age to a numeric value instead of factor
+train$age <- as.numeric(train$age)
+test$age <- as.numeric(test$age)
+
+#convert "?" to NA
+train[train == "?"] <- NA
+test[test == "?"] <- NA
+
+#convert string columns to factor columns for train
+train$workclass <- as.factor(train$workclass)
+train$education <- as.factor(train$education)
+train$marital_status <- as.factor(train$marital_status)
+train$occupation <- as.factor(train$occupation)
+train$relationship <- as.factor(train$relationship)
+train$race <- as.factor(train$race)
+train$sex <- as.factor(train$sex)
+
+
+#convert string columns to factor columns for test
+test$workclass <- as.factor(test$workclass)
+test$education <- as.factor(test$education)
+test$marital_status <- as.factor(test$marital_status)
+test$occupation <- as.factor(test$occupation)
+test$relationship <- as.factor(test$relationship)
+test$race <- as.factor(test$race)
+test$sex <- as.factor(test$sex)
+
+
+#remove na values from train
+train <- na.omit(train)
+
+#remove na values from test
+test <- na.omit(test)
 ```
 
 ```{r}
@@ -49,9 +96,49 @@ us_citizen_test[test$native_country != "United-States"] <- "No"
 test$US_Citizen <- us_citizen_test
 ```
 
+```{r}
+resp = data.frame(table(train$Over50k))
+ggplot(data = resp, aes(x = Var1, y = Freq)) + geom_bar(stat = "identity")
+```
+
+```{r}
+train
+```
+```{r}
+ggplot(data = train, aes(x = education)) + geom_bar()
+
+
+ggplot(data = train, aes(x = relationship)) + geom_bar()
+
+ggplot(data = train, aes(x = workclass)) + geom_bar()
+
+ggplot(data = train, aes(x = race)) + geom_bar()
+
+ggplot(data = train, aes(x = sex)) + geom_bar()
+
+
+ggplot(data = train, aes(x = Over50k, y = age, fill = 'type')) + geom_boxplot()
+
+
+ggplot(data = train, aes(x = Over50k, y = hours_per_week, fill = 'type')) + geom_boxplot()
+```
+```{r}
+ggplot(data = train, aes(x = Over50k, y = capital_gain, fill = 'type')) + geom_boxplot()
+
+ggplot(data = train, aes(x = Over50k, y = capital_loss, fill = 'type')) + geom_boxplot()
+
+```
 
 ```{r}
 library(polycor)
+train <- train[, -14]
+```
+
+```{r}
+train$US_Citizen <- as.factor(train$US_Citizen)
+
+train$Over50k <- as.factor(train$Over50k)
+train
 ```
 
 ```{r}

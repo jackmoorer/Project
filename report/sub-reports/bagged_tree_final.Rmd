@@ -1,0 +1,242 @@
+---
+title: 'Stat 154 Final Project: Bagged Tree'
+output: pdf_document
+---
+
+```{r}
+require(ggplot2)
+require(caret)
+require(ROCR)
+require(randomForest)
+```
+
+
+```{r}
+train = read.csv('../data/clean_train.csv', header = TRUE)
+test = read.csv("../data/clean_test.csv", header = TRUE)
+train_bag = train[, -ncol(train)]
+test_bag = test[, -ncol(train)]
+```
+
+
+```{r}
+train_bag_response = train_bag$Over50k
+test_bag_response = test_bag$Over50k
+```
+
+
+There are several ways on how to fit a bagged tree model in R. We decided to use the randomForest package and utilize the randomForest function. Although this function is primarily used in modeling random forests, we took advantage of the fact that bagged trees are actually a special case of random forests where all predictors variables are used as candidates at each split.
+
+In order to help determine which model is the best, we began hypertuning the number of trees via five-fold cross validation. We decided to use a total of 5 ntree values which are given by (100, 300, 500, 700, 900). 
+
+```{r}
+ntree = seq(100, 1000, by = 200)
+CV_mat = matrix(ncol = 5, nrow = 5)
+rownames(CV_mat) = ntree
+colnames(CV_mat) = paste0("Fold", 1:5)
+set.seed(200)
+folds = createFolds(train_bag_response, k = 5)
+for (j in 1:length(ntree)) {
+  err_rate = numeric(5)
+  for (i in 1:length(folds)) {
+    fold = folds[[i]]
+    train_set = train_bag[-fold, ]
+    test_set = train_bag[fold, ]
+    bag_fit = randomForest(Over50k ~., data = train_set, ntree = ntree[j],
+                           mtry = ncol(train_bag) - 1, importance = TRUE)
+    bag_pred = predict(bag_fit, test_set)
+    err_rate[i] = 1 - mean(test_set$Over50k == bag_pred)
+  }
+  CV_mat[j,] = err_rate
+}
+CV_mat = cbind(CV_mat, rowMeans(CV_mat))
+colnames(CV_mat) = c(paste0("Fold", 1:5), "Average")
+```
+
+
+```{r}
+CV_mat
+```
+
+Here are the results of the cross-validation, where the last column shows the average missclassification rate for each values of ntree. As we can see, some fits yield a lower rates than others.
+
+```{r}
+plot(as.numeric(rownames(CV_mat)), CV_mat[,6], type = "p", pch = 19,
+     xlab = "Number of Trees", ylab = "Misclassif. Error", 
+     main = "Five-Fold Cross Validation: Number of Trees")
+lines(as.numeric(rownames(CV_mat)), CV_mat[,6])
+```
+
+We decided to plot the number of trees against average CV-missclassification error. According to our plot, ntree = 900 performed the best. We see as the number of trees grows, our misclassification rate decreases. We expected this to be the case since higher levels of complexity.
+
+
+```{r}
+sort(CV_mat[,6])[1:2]
+```
+
+In order to ensure ourselves that we are not overfitting, we will choose the two values of ntree that yielded the best results from cross validation. The values that correspond to these are ntree = 700, 900.
+
+
+```{r}
+AUC_vec = numeric(2)
+AUC_vec1 = numeric(2)
+train_misclass_vec = numeric(2)
+test_misclass_vec = numeric(2)
+test_sensitivity = numeric(2)
+test_specificity = numeric(2)
+
+```
+
+We proceed with fitting a bagged tree on our training data using the aforementioned ntree values.
+
+```{r}
+set.seed(100)
+bag_fit = randomForest(Over50k ~., data = train_bag, ntree = 700,
+                       mtry = ncol(train_bag) - 1, importance = TRUE)
+
+#Training Set Classification Error
+bag_pred = predict(bag_fit, newdata = train_bag)
+train_misclass_vec[1] = mean(bag_pred != train_bag_response)
+train_probabilities = predict(bag_fit, newdata = train_bag, type = "prob")
+prediction_train = prediction(train_probabilities[,2], train_bag_response)
+performance_train = performance(prediction_train, measure = "tpr", x.measure = "fpr")
+AUC_vec1[1] = performance(prediction_train, measure="auc")@y.values[[1]]
+
+
+#Test Set Classification Error
+bag_pred = predict(bag_fit, newdata = test_bag)
+test_misclass_vec[1] = mean(bag_pred != test_bag_response)
+
+
+confusion_mat = table(bag_pred, test_bag_response)
+test_sensitivity[1] = confusion_mat[2, 2]/(confusion_mat[2, 2] + confusion_mat[1, 2])
+test_specificity[1] = confusion_mat[1, 1]/(confusion_mat[1, 1] + confusion_mat[2, 1])
+
+
+test_probabilities = predict(bag_fit, newdata = test_bag, type = "prob")
+prediction_test = prediction(test_probabilities[,2], test_bag_response)
+performance_test = performance(prediction_test, measure = "tpr", x.measure = "fpr")
+AUC_vec[1] = performance(prediction_test, measure="auc")@y.values[[1]]
+
+```
+
+
+
+```{r}
+set.seed(100)
+bag_fit = randomForest(Over50k ~., data = train_bag, ntree = 900,
+                       mtry = ncol(train_bag) - 1, importance = TRUE)
+summary(bag_fit)
+
+#Training Set Classification Error
+bag_pred = predict(bag_fit, newdata = train_bag)
+train_misclass_vec[2] = mean(bag_pred != train_bag_response)
+train_probabilities = predict(bag_fit, newdata = train_bag, type = "prob")
+prediction_train = prediction(train_probabilities[,2], train_bag_response)
+performance_train = performance(prediction_train, measure = "tpr", x.measure = "fpr")
+AUC_vec1[2] = performance(prediction_train, measure="auc")@y.values[[1]]
+
+
+#Test Set Classification Error
+bag_pred = predict(bag_fit, newdata = test_bag)
+test_misclass_vec[2] = mean(bag_pred != test_bag_response)
+
+#Confusion Matrix
+confusion_mat = table(bag_pred, test_bag_response)
+test_sensitivity[2] = confusion_mat[2, 2]/(confusion_mat[2, 2] + confusion_mat[1, 2])
+test_specificity[2] = confusion_mat[1, 1]/(confusion_mat[1, 1] + confusion_mat[2, 1])
+
+#Find AUC values
+test_probabilities = predict(bag_fit, newdata = test_bag, type = "prob")
+prediction_test = prediction(test_probabilities[,2], test_bag_response)
+performance_test = performance(prediction_test, measure = "tpr", x.measure = "fpr")
+AUC_vec[2] = performance(prediction_test, measure="auc")@y.values[[1]]
+
+```
+
+
+
+
+#Bagged Tree Selection
+
+For both fits, we created a vector that stored the values of training accuracy rate, test accuracy rate, test sensitivity, test specificity, test AUC, and train AUC. We then created a matrix that allowed us to facilitate comparisons amongst the three bagged trees.
+
+```{r}
+comparison_mat = cbind(train_misclass_vec, test_misclass_vec, test_sensitivity, test_specificity, AUC_vec, AUC_vec1)
+rownames(comparison_mat) = c(700, 900)
+colnames(comparison_mat) = c("train misclass.", "test misclass.", "test sensitivity",
+                             "test specificity", "test AUC", "train AUC")
+
+
+comparison_mat
+```
+
+#Training Results
+```{r}
+comparison_mat[,c(1,6)]
+```
+
+#Test Results
+```{r}
+comparison_mat[,2:5]
+```
+
+
+According to our results, running a bagged tree with ntree = 900 provided the most reasonable results and predictions. From the two most accurate fits via 5-fold cross validation, the aforementioned model yielded that best train misclassification rate, test misclassification rate, test sensitivity, test specificity, test AUC, and train AUC. We considered choosing ntree = 700 in order to decrease our chances of overfitting; however, this fit did not perform nearly as well as the other.
+
+#Final Fit
+```{r}
+set.seed(100)
+bag_fit = randomForest(Over50k ~., data = train_bag, ntree = 900,
+                       mtry = ncol(train_bag) - 1, importance = TRUE)
+summary(bag_fit)
+
+bag_pred = predict(bag_fit, newdata = test_bag)
+```
+
+
+```{r}
+#Confusion Matrix
+(confusion_mat = table(bag_pred, test_bag_response))
+
+```
+
+
+#Statistics for Fit
+```{r}
+comparison_mat[2,]
+```
+
+
+#ROC Curve for Train Set
+```{r}
+train_probabilities = predict(bag_fit, newdata = train_bag, type = "prob")
+prediction_train = prediction(train_probabilities[,2], train_bag_response)
+performance_train = performance(prediction_train, measure = "tpr", x.measure = "fpr")
+plot(performance_train, main = "ROC: Bagged Tree for Train, ntree = 900")
+abline(a = 0, b = 1, lty = 2)
+```
+
+
+#ROC Curve for Test Set
+```{r}
+test_probabilities = predict(bag_fit, newdata = test_bag, type = "prob")
+prediction_test = prediction(test_probabilities[,2], test_bag_response)
+performance_test = performance(prediction_test, measure = "tpr", x.measure = "fpr")
+plot(performance_test, main = "ROC: Bagged Tree for Test, ntree = 900")
+abline(a = 0, b = 1, lty = 2)
+
+```
+
+
+```{r}
+imp_data = as.data.frame(importance(bag_fit))
+imp_data[order(imp_data$MeanDecreaseGini, decreasing = TRUE)[1:6],]
+```
+
+
+```{r}
+varImpPlot(bag_fit)
+```
+
+According to the MeanDecreaseGini measure, the relationship variable was the most important. We were interested to see that fnlwgt was second, since we did not anticipate this variable gaining such a high value for MeanDecreaseGini. Some other important variables were age, education, capital_gain, and hours_per_week.

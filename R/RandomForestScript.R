@@ -26,6 +26,7 @@ pdf(file = "../images/training_plots/random-forest-cv-plot.pdf")
 with(rf_cv, plot(n.var, error.cv, log="x", type="o", lwd=2, main = "CV Variables vs Error Rate", xlab = "Variables Used", ylab = "CV Error Rate"))
 dev.off()
 
+
 #get best number of variables to use
 num_var <- as.numeric(names(which.min(rf_cv$error.cv)))
 

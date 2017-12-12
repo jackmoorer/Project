@@ -1,2 +1,2 @@
 [1] "Train AUC for Classifcation Tree"
-[1] 0.871355
+[1] 0.8729808

@@ -8,6 +8,38 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+#Introduction
+
+The Census Income data set provided by Ronny Kohavi and Berry Becker is a data set documenting several characteristics of individuals across the globe. Amongst these characteristics are age, working status, sex, hours worked per week, native country, and even relationship status. The objective of this report is to utilize these given characteristics and create several classification models in order help predict whether a certain person makes over $50,000 in yearly earnings.
+
+In this report, we will focus on fitting three different types of classifiers on our data: classification trees, bagged trees, and random forest classifiers. For each classification method, we will use several statistical measures in order to hypertune and eventually arrive at an optimal model fit. In doing so, we will put these three models against each other to finally choose the model we believe fits and predicts our data the best.
+
+In building a model to predict if people make over 50k a year or not, preditive performance is obviously important, but also crucial to this project is finding the importance of each feature. In this report we will find, based on our 3 methods, which features are more important in predicting whether a person makes 50k a year or not.
+
+The first part of this report details some of what we did in our Exploritory Data Analysis. We then used the training data to fit a classification tree, bagged tree, and random forest. For each model we looked at the performance on the training data by looking at the training error rate and looking at the training ROC and AUC. For the classification tree, we tuned the hyperparameter based on the size of the classification tree, or the number of terminal nodes. We examined the variable importance of the classification tree by looking plotting the tree. For the bagged tree we tuned the parameter dealing with number of trees used for estimation. We examined the variable importance of the bagged tree using the mean decreased gini. Finally, we tuned the random forest based on both the number of trees used for estimation, and the number of features to use for each split. It was important that the number of features was not maximum, because then the random forest would be a bagged tree, so we limited the number of features the random forest could use using tuneRF.
+
+Finally, we looked at the test performance of each model. For each model we looked at the test data error rate. We then found the confusion matrix for each model, and used it to find the sensitivity and specificity of each model. We then plotted the ROC curves for each classifier, and examined each AUC. In the end we will report which model performed the best on the test data.
+
+A note on the file structure of this project. Data is stored in the data folder. This file, in the report folder, is the main report for this project. Inside the report folder is a sub-report folder, with Rmd files and pdfs of analysis performed in EDA, classification trees, bagged trees, and random forest. Each Rmd file also has an occompaning R script file in the R folder, with the except of EDA, whose R script code is in the cleandata.R script. Each R script is used to save the plots and output of each of the sections of this report. You can find plots in the images folder, and all other text results in the results folder.
+
+#EDA
+Before we made any exploritory data analysis, we cleaned up the data. You can see how we cleaned the data in the cleandata.R script in the R folder.
+
+First the data came in the form of a .data file for the train and a .test file for the test data. I noticed that you can read in files that are .data or .test using the read.table() function, however, I noticed it would have been a lot nicer if the data was in csv file format. In order to change it, I just renamed adult.data to adult.csv and adult.test to test.csv. We also specificially set stringAsFactors to false so that we can define later define the levels of each column so that the test and training data had the same levels for categorical variables. The data did not have names, so I named each column based on the name provided in the attribute information section from where we got the data, and named the response variable Over50k.
+
+The Over50k variable originally had two levels, ">50k" and "<=50k". I decided I wanted them to be categorized as "Yes" and "No", so I changed the labels so that ">50k" was "yes" and "<=50k" was no. I also added a column over_50k_numeric, that just acted as a numeric indicator variable for Over50k with Yes as 1 and No as 0, however, it turned out it was not needed.
+
+Next we noticed there were missing values set to a quetion mark "?". I replaced these with NA values. We then decided to omit data that had NA values. The reason we felt this was ok was that there were still plenty of data points left after ommitted data.
+
+Next we looked at the distrubution and correlations of the data. One particular variable that stood out to me when looking at the distrubtion of the data was native_country. At first, we kept native_country as it was, however, we ran into several issues. For one, there were more than 32 countries represented, so in order to run a classification tree we had to keep native_country as a character vector. I looked at the distribution of native_country in the training set, and found that by far the frequency of people from the United States trumped the rest of the countries. To deal with native_country, we decided it then made sense, based on this representation, to remove the native_country column, and replace it with a column called US_citized, that indicated whether the person's native country was the United States or not. 
+
+Another part of the EDA we noticed was that the frequency of people having over 50k was about half of that of those that were less than equal to 50k. We noticed that could be an issue for predictive power, as a model that overpredicted "No" could have high accuracy but low true performance.
+
+Next, we looked at the features correlation using the library polycor. We decided that education and education_num were far too correlated, so we decided to remove the variable education_num. 
+
+We did not change the scale of any variables. One of the main reasons is that many of our variables were categorical, and we decided not to convert categorical variables in dumby variables. We also decided not to deal with outliers, between with over 30,000 training observations the impact of outliers would be relatively small.
+
+Finally, I wrote the cleaned training data as clean_train.csv and wrote the cleaned test data as clean_test.csv in the data folder.
 
 ```{r}
 #read in the clean data
@@ -190,10 +222,201 @@ class_tree_train_auc
 
 The training auc for the classification tree is 'r class_tree_train_auc'.
 
+##Bagged Tree
+
+###Build Model
+```{r}
+#load packages
+library(randomForest)
+library(caret)
+```
+
+```{r}
+#prepare data
+train_bag = train[, -ncol(train)]
+test_bag = test[, -ncol(test)]
+train_bag_response = train_bag$Over50k
+test_bag_response = test_bag$Over50k
+```
+
+There are several ways on how to fit a bagged tree model in R. We decided to use the randomForest package and utilize the randomForest function. Although this function is primarily used in modeling random forests, we took advantage of the fact that bagged trees are actually a special case of random forests where all predictors variables are used as candidates at each split.
+
+In order to help determine which model is the best, we began hypertuning the number of trees via five-fold cross validation. We decided to use a total of 5 ntree values which are given by (100, 300, 500, 700, 900). 
+
+```{r}
+#cross validate
+ntree = seq(100, 1000, by = 200)
+CV_mat = matrix(ncol = 5, nrow = 5)
+rownames(CV_mat) = ntree
+colnames(CV_mat) = paste0("Fold", 1:5)
+set.seed(200)
+folds = createFolds(train_bag_response, k = 5)
+for (j in 1:length(ntree)) {
+  err_rate = numeric(5)
+  for (i in 1:length(folds)) {
+    fold = folds[[i]]
+    train_set = train_bag[-fold, ]
+    test_set = train_bag[fold, ]
+    bag_fit = randomForest(Over50k ~., data = train_set, ntree = ntree[j],
+                           mtry = ncol(train_bag) - 1, importance = TRUE)
+    bag_pred = predict(bag_fit, test_set)
+    err_rate[i] = 1 - mean(test_set$Over50k == bag_pred)
+  }
+  CV_mat[j,] = err_rate
+}
+CV_mat = cbind(CV_mat, rowMeans(CV_mat))
+colnames(CV_mat) = c(paste0("Fold", 1:5), "Average")
+```
+
+```{r}
+CV_mat
+```
+
+Here are the results of the cross-validation, where the last column shows the average missclassification rate for each values of ntree. As we can see, some fits yield a lower rates than others.
+
+```{r}
+plot(as.numeric(rownames(CV_mat)), CV_mat[,6], type = "p", pch = 19,
+     xlab = "Number of Trees", ylab = "Misclassif. Error", 
+     main = "Five-Fold Cross Validation: Number of Trees")
+lines(as.numeric(rownames(CV_mat)), CV_mat[,6])
+```
+
+We decided to plot the number of trees against average CV-missclassification error. According to our plot, ntree = 900 performed the best. We see as the number of trees grows, our misclassification rate decreases. We expected this to be the case since higher levels of complexity.
+
+```{r}
+sort(CV_mat[,6])[1:2]
+```
+
+In order to ensure ourselves that we are not overfitting, we will choose the two values of ntree that yielded the best results from cross validation. The values that correspond to these are ntree = 700, 900.
+
+###Traiing results
+
+```{r}
+AUC_vec = numeric(2)
+AUC_vec1 = numeric(2)
+train_misclass_vec = numeric(2)
+test_misclass_vec = numeric(2)
+test_sensitivity = numeric(2)
+test_specificity = numeric(2)
+```
+
+```{r}
+set.seed(100)
+bag_fit = randomForest(Over50k ~., data = train_bag, ntree = 700,
+                       mtry = ncol(train_bag) - 1, importance = TRUE)
+
+#Training Set Classification Error
+bag_pred = predict(bag_fit, newdata = train_bag)
+train_misclass_vec[1] = mean(bag_pred != train_bag_response)
+train_probabilities = predict(bag_fit, newdata = train_bag, type = "prob")
+prediction_train = prediction(train_probabilities[,2], train_bag_response)
+performance_train = performance(prediction_train, measure = "tpr", x.measure = "fpr")
+AUC_vec1[1] = performance(prediction_train, measure="auc")@y.values[[1]]
+
+
+#Test Set Classification Error
+bag_pred = predict(bag_fit, newdata = test_bag)
+test_misclass_vec[1] = mean(bag_pred != test_bag_response)
+
+
+confusion_mat = table(bag_pred, test_bag_response)
+test_sensitivity[1] = confusion_mat[2, 2]/(confusion_mat[2, 2] + confusion_mat[1, 2])
+test_specificity[1] = confusion_mat[1, 1]/(confusion_mat[1, 1] + confusion_mat[2, 1])
+
+
+test_probabilities = predict(bag_fit, newdata = test_bag, type = "prob")
+prediction_test = prediction(test_probabilities[,2], test_bag_response)
+performance_test = performance(prediction_test, measure = "tpr", x.measure = "fpr")
+AUC_vec[1] = performance(prediction_test, measure="auc")@y.values[[1]]
+```
+
+
+```{r}
+set.seed(100)
+bag_fit = randomForest(Over50k ~., data = train_bag, ntree = 900,
+                       mtry = ncol(train_bag) - 1, importance = TRUE)
+summary(bag_fit)
+
+#Training Set Classification Error
+bag_pred = predict(bag_fit, newdata = train_bag)
+train_misclass_vec[2] = mean(bag_pred != train_bag_response)
+train_probabilities = predict(bag_fit, newdata = train_bag, type = "prob")
+prediction_train = prediction(train_probabilities[,2], train_bag_response)
+performance_train = performance(prediction_train, measure = "tpr", x.measure = "fpr")
+AUC_vec1[2] = performance(prediction_train, measure="auc")@y.values[[1]]
+
+
+#Test Set Classification Error
+bag_pred = predict(bag_fit, newdata = test_bag)
+test_misclass_vec[2] = mean(bag_pred != test_bag_response)
+
+#Confusion Matrix
+confusion_mat = table(bag_pred, test_bag_response)
+test_sensitivity[2] = confusion_mat[2, 2]/(confusion_mat[2, 2] + confusion_mat[1, 2])
+test_specificity[2] = confusion_mat[1, 1]/(confusion_mat[1, 1] + confusion_mat[2, 1])
+
+#Find AUC values
+test_probabilities = predict(bag_fit, newdata = test_bag, type = "prob")
+prediction_test = prediction(test_probabilities[,2], test_bag_response)
+performance_test = performance(prediction_test, measure = "tpr", x.measure = "fpr")
+AUC_vec[2] = performance(prediction_test, measure="auc")@y.values[[1]]
+```
+
+####Bagged Tree Selection
+
+For both fits, we created a vector that stored the values of training accuracy rate, test accuracy rate, test sensitivity, test specificity, test AUC, and train AUC. We then created a matrix that allowed us to facilitate comparisons amongst the three bagged trees.
+
+```{r}
+comparison_mat = cbind(train_misclass_vec, test_misclass_vec, test_sensitivity, test_specificity, AUC_vec, AUC_vec1)
+rownames(comparison_mat) = c(700, 900)
+colnames(comparison_mat) = c("train misclass.", "test misclass.", "test sensitivity",
+                             "test specificity", "test AUC", "train AUC")
+
+
+comparison_mat
+```
+
+####Training Results
+```{r}
+comparison_mat[,c(1,6)]
+```
+
+#Final Fit
+```{r}
+set.seed(100)
+bag_fit = randomForest(Over50k ~., data = train_bag, ntree = 900,
+                       mtry = ncol(train_bag) - 1, importance = TRUE)
+summary(bag_fit)
+
+bag_pred = predict(bag_fit, newdata = test_bag)
+```
+
+
+According to our results, running a bagged tree with ntree = 900 provided the most reasonable results and predictions. From the two most accurate fits via 5-fold cross validation, the aforementioned model yielded that best train misclassification rate, test misclassification rate, test sensitivity, test specificity, test AUC, and train AUC. We considered choosing ntree = 700 in order to decrease our chances of overfitting; however, this fit did not perform nearly as well as the other.
+
+```{r}
+#plot roc
+train_probabilities = predict(bag_fit, newdata = train_bag, type = "prob")
+prediction_train = prediction(train_probabilities[,2], train_bag_response)
+performance_train = performance(prediction_train, measure = "tpr", x.measure = "fpr")
+plot(performance_train, main = "ROC: Bagged Tree for Train, ntree = 900")
+abline(a = 0, b = 1, lty = 2)
+```
+
+The variable importance of the bagged trees are found below:
+
+```{r}
+imp_data = as.data.frame(importance(bag_fit))
+imp_data[order(imp_data$MeanDecreaseGini, decreasing = TRUE)[1:6],]
+```
+
+```{r}
+varImpPlot(bag_fit)
+```
+
+According to the MeanDecreaseGini measure, the relationship variable was the most important. We were interested to see that fnlwgt was second, since we did not anticipate this variable gaining such a high value for MeanDecreaseGini. Some other important variables were age, education, capital_gain, and hours_per_week.
 
 ##Random Forest
-
-
 
 ###Build Model
 ```{r}
@@ -420,6 +643,7 @@ ct_specificity
 The classification tree sensitivity is 'r ct_sensitivity' and the classification tree specificity is 'r ct_specificity'. We have a low sensitivity and high specificity.
 
 ###ROC and AUC
+
 ```{r}
 #prepare roc curve
 ct_test_probs <- predict(prune_classification_tree, test_tree_preds)
@@ -441,6 +665,45 @@ ct_test_auc
 ```
 
 The test auc for the classification tree is 'r ct_test_auc'.
+
+##Bagged Tree
+
+Note that this section will look a little different than the previous sections. Jack did the work on the classification tree and random forest, while Jaime did the work on the bagged tree, and the structure of our code was different. The variables that make the these results are actually found in the training section of the bagged train.
+
+###Error Rate
+
+####Test Results
+```{r}
+#test results for the tune different parameters we picked
+comparison_mat[,2:5]
+```
+
+```{r}
+#test results for the fit we picked
+comparison_mat[2,]
+```
+
+###Confusion Matrix
+```{r}
+#Confusion Matrix
+(confusion_mat = table(bag_pred, test_bag_response))
+```
+
+###Specificity and Sensitivity
+
+Look above for specificity and sensitivity
+
+###ROC and AUC
+
+AUC is reported in an above section
+
+```{r}
+test_probabilities = predict(bag_fit, newdata = test_bag, type = "prob")
+prediction_test = prediction(test_probabilities[,2], test_bag_response)
+performance_test = performance(prediction_test, measure = "tpr", x.measure = "fpr")
+plot(performance_test, main = "ROC: Bagged Tree for Test, ntree = 900")
+abline(a = 0, b = 1, lty = 2)
+```
 
 
 ##Random Forest
@@ -514,3 +777,32 @@ rf_test_auc
 ```
 
 The random forest test AUC was 'r rf_test_auc'.
+
+#Best Model
+
+Our Random Forest performed the best out of the 3 models. The random forest had the lower test error rate, greatest test AUC, greatest sensitivity, and greatest specificity of all 3 models, making it far an away the best model based on the performance of the test data.
+
+The most important variables for our random forest with variable importance statistic were:
+
+* capitcal_gain: 1080.7801
+
+* relationship: 1010.8085
+
+* education: 963.7646
+
+* marital_status: 913.8188
+
+* occupation: 862.5448
+
+* age: 815.9970
+
+
+#Conclusion
+
+In this report we used the Census Income data set to find the best model to predict whether a certain person makes over $50,000 in yearly earnings, and found the most important features in classifying this prediction. Using the training data set from the adult.data file, we trained a classification tree, bagged tree, and random forest, and then tested each model on the test data set from the adult.test file.
+For each model we tuned certain hyperparamters using cross validation. For the classification tree we tuned the size, or number of terminal nodes for the tree. Using this parameter, we fit a pruned classification tree on the training data, and examined the variable importance via the plot structure of the tree. For the bagged tree we tuned the number of trees used as estimators during the bootstrap estimation process, finding the best number of trees was 900. In the bagged tree we did worry about overfitting, so we also looked at the second best number of trees, 700. Finally, for the random forest we tuned both the number of trees used as estimators and the maximum number of features used for each split, making sure that the maximum features we less than the full number of features, as that would have made it a bagged tree. We found that the best combination of parameters was 1500 trees and 2 features. 
+
+We then tested our models on both the training on test data, reporting the results of each. Based on the training data, bagged trees seemed to be the best model, however, this may have been due to overfitting. On the test data, however, the random forest model performed the best based on every metric we used to test performance. This implies the random forest reduced the variance captured in the bagged tree, without a huge increase in bias. In the end we determined the random forest was the best predictive model.
+
+
+
